@@ -35,7 +35,7 @@ static PWD_PATH: Lazy<Arc<Mutex<Option<String>>>> = Lazy::new(|| {
 static CURRENT_USER_ID: Lazy<Arc<Mutex<Option<String>>>> = Lazy::new(|| {
     Arc::new(Mutex::new(Option::None))
 });
-static STORE_MAPS: Lazy<Arc<Mutex<BTreeMap<StoreName, SafeStore>>>> = Lazy::new(|| {
+static STORE_MAPS: Lazy<Arc<Mutex<BTreeMap<StoreName, Arc<Mutex<SafeStore>>>>>> = Lazy::new(|| {
     Arc::new(Mutex::new(BTreeMap::new()))
 });
 
@@ -48,19 +48,17 @@ pub fn init(pwd: &str, user_id: &str) -> () {
         Ok(mut i) => *i = Some(user_id.to_string()),
         Err(_) => panic!("current user id is not empty!"),
     }
-    let mut sl = STORE_MAPS.lock().unwrap();
-    match sl.get(&StoreName::COMMON) {
+    let mut store_map = STORE_MAPS.lock().unwrap();
+    match store_map.get(&StoreName::COMMON) {
         Some(_) => (),
         None => {
-            // let binding = Path::new(pwd).join("Profiles");
-            // let path = Path::new(binding.to_str().unwrap());
             let path = get_store_config(pwd, None);
             let config = StoreConfig {
                 pwd: path,
                 config_name: StoreName::COMMON.str().to_string(),
             };
             let store = SafeStore::from_config(config);
-            sl.insert(StoreName::COMMON, store);
+            store_map.insert(StoreName::COMMON, Arc::new(Mutex::new(store)));
         }
     }
 }
@@ -73,47 +71,36 @@ pub fn change_user_scope(user_id: &str) {
 
     restore();
 
-    let sl = STORE_MAPS.lock().unwrap();
-    match sl.get(&StoreName::COMMON) {
-        Some(ss) => {
-            ss.set("lastLoginUser.userId", user_id);
+    let store_map = STORE_MAPS.lock().unwrap();
+    match store_map.get(&StoreName::COMMON) {
+        Some(store) => {
+            store.lock().unwrap().set("lastLoginUser.userId", user_id);
         },
         None => (),
     }
 }
 
-pub fn get<'static>(store_name: StoreName) -> Option<&'static SafeStore> {
-    let mut sl = STORE_MAPS.lock().unwrap();
-    if store_name == StoreName::COMMON {
-        let mut common_store = sl.get(&StoreName::COMMON);
-        return common_store;
-        // return sl.get(&StoreName::COMMON);
-        // return Some(sl.get(&StoreName::COMMON).unwrap())
+pub fn get(store_name: StoreName) -> Option<Arc<Mutex<SafeStore>>> {
+    let mut store_map = STORE_MAPS.lock().unwrap();
+    match store_map.get(&store_name) {
+        Some(store) => Some(store.clone()),
+        None => {
+            match PWD_PATH.lock() {
+                Ok(pwd) => {
+                    let path = 
+                        get_store_config(pwd.as_ref().unwrap().as_str(), None);
+                    let config = StoreConfig {
+                        pwd: path,
+                        config_name: store_name.str().to_string(),
+                    };
+                    let store = Arc::new(Mutex::new(SafeStore::from_config(config)));
+                    store_map.insert(store_name, store.clone());
+                    Some(store)
+                },
+                Err(_) => None,
+            }
+        },
     }
-
-    // match sl.get(&store_name) {
-    //     Some(ss) => Some(ss),
-    //     None => {
-    //         match PWD_PATH.lock() {
-    //             Ok(mut pwd) => {
-    //                 let path = get_store_config(&pwd.unwrap().to_string(), None);
-    //                 // let config = StoreConfig {
-    //                 //     pwd: path,
-    //                 //     config_name: store_name.str().to_string(),
-    //                 // };
-    //                 // let store = SafeStore::from_config(config);
-    //                 // sl.insert(store_name, store);
-
-    //                 // Some(store);
-
-    //                 None
-    //             },
-    //             Err(_) => None,
-    //         }
-    //     },
-    // }
-
-//     None
 }
 
 pub fn restore() {
@@ -123,17 +110,16 @@ pub fn restore() {
     }
 
     match STORE_MAPS.lock() {
-        Ok(mut sl) => sl.retain(|k, _| *k != StoreName::COMMON),
+        Ok(mut store_map) => store_map.retain(|k, _| *k != StoreName::COMMON),
         Err(_) => (),
     }
 }
 
 pub fn get_store_config(pwd: &str, user_id: Option<&str>) -> String {
     let mut binding = Path::new(pwd).join("Profiles");
-    match user_id {
-        Some(uid) => binding = binding.join(uid),
-        None => (),
-    };
+    if let Some(uid) = user_id {
+        binding = binding.join(uid);
+    }
     let path = Path::new(binding.to_str().unwrap());
     return path.to_str().unwrap().to_string()
 }
