@@ -1,0 +1,9 @@
+syntax = "proto3";
+package ack;
+
+option java_outer_classname="C2SAck";
+
+// cmd - 1
+message AckReq
+{
+}

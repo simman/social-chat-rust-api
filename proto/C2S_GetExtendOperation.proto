@@ -1,0 +1,11 @@
+syntax = "proto3";
+package get_extend_operation;
+
+option java_outer_classname="C2SGetExtendOperation";
+
+// 获取会话扩展信息(群禁言信息等)
+message GetExtendOperation
+{
+	string sendType = 1; // 转发类型，PRIVATE-单聊(点对点)；GROUP-群聊；CHATROOM-聊天室；SYSTEM-系统消息；
+	string targetId = 2; // 被操作对象的ID：用户ID/群组ID/聊天室ID/-(系统)
+}

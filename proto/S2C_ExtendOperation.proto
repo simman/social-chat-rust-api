@@ -1,0 +1,19 @@
+syntax = "proto3";
+package extend_operation;
+
+option java_outer_classname="S2CExtendOperation";
+
+// cmd
+// 522 - 获取会话扩展信息(群禁言信息等) ,协议文档: S2C_ExtendOperation.proto
+message ExtendOperation
+{
+	string targetId = 1; // targetId
+	string sendType = 2; // 转发类型，PRIVATE-单聊(点对点)；GROUP-群聊；CHATROOM-聊天室；SYSTEM-系统消息；
+	repeated ItemExtendConfig extendsConfigs = 3; // 扩展信息
+}
+
+message ItemExtendConfig
+{
+	string type = 1; //1- 群全员禁言 2- 群禁言
+	string val = 2;  // 1 开启
+}

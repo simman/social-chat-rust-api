@@ -1,0 +1,11 @@
+syntax = "proto3";
+package video_join;
+
+option java_outer_classname="C2SVideoJoin";
+
+// cmd - 150 视频群聊主动加入
+message VideoJoin
+{
+    string targetId = 1;//targetId
+	string roomId = 2;	// 音视频通话房间ID
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+package chatroom_property;
+
+// cmd
+// 113 - 设置聊天室属性
+message SetPropertyReq
+{
+	string propName = 1; // 属性名称
+	string propValue = 2; // 属性值
+	int32 autoDelete = 3; // 是否自动删除：1-是；0-否；
+	string chatroomId = 4; // 聊天室ID
+}
+
+// 114 - 删除聊天室属性
+message DelPropertyReq
+{
+	string propName = 1; // 属性名称
+	string chatroomId = 2; // 聊天室ID
+}
+
+// 115 - 获取聊天室属性（请求）
+message GetPropertyReq
+{
+	string propName = 1; // 属性名称
+	string chatroomId = 2; // 聊天室ID
+}
+
+// 512 - 获取聊天室属性（响应）
+message GetPropertyResultRet
+{
+	string propName = 1; // 属性名称
+	string propValue = 2; // 属性值
+	string chatroomId = 3; // 聊天室ID
+}

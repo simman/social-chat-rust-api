@@ -1,0 +1,10 @@
+syntax = "proto3";
+package get_user_info_list;
+
+option java_outer_classname="C2SGetUserInfoList";
+
+// 查询用户相关信息
+message GetUserInfoList
+{
+	repeated string userIds = 1; //user ID
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package message_audio_read;
+
+option java_outer_classname="C2SMessageAudioRead";
+
+// cmd - 121 语音消息已读确认
+message MessageAudioRead
+{
+    string targetId = 1; //会话ID
+	string sendType = 2; //转发类型 PRIVATE-单聊(点对点)；GROUP-群聊
+	string messageId = 3; // 消息ID
+}

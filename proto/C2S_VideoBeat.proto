@@ -1,0 +1,11 @@
+syntax = "proto3";
+package video_beat;
+
+option java_outer_classname="C2SVideoBeat";
+
+// cmd - 153 房间心跳 协议文档：C2S_VideoBeat.proto
+message VideoBeat
+{
+	string roomId = 1;	// 音视频通话房间ID
+
+}

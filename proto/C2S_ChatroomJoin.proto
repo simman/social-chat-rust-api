@@ -1,0 +1,11 @@
+syntax = "proto3";
+package chatroom_join;
+
+option java_outer_classname="S2CChatroomJoin";
+
+// cmd
+// 112 - 加入聊天室
+message ChatroomJoinReq
+{
+	string chatroomId = 1; // 加入的聊天室ID
+}

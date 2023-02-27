@@ -1,0 +1,10 @@
+syntax = "proto3";
+package get_query_group_name;
+
+option java_outer_classname="C2SGetQueryGroupName";
+
+// 批量查询解散的群会话名称
+message GetQueryGroupName
+{
+	repeated string targetIds = 1; // target IDs
+}

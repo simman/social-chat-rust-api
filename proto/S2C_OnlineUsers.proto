@@ -1,0 +1,18 @@
+syntax = "proto3";
+package online_users;
+
+option java_outer_classname="S2COnlineUsers";
+
+// 用户在线列表回包
+message OnlineUsers
+{
+	repeated ItemOnlineUser onlineUsers = 1; // 信息
+}
+
+//默认状态是离线
+message ItemOnlineUser
+{
+    string userId = 1;// userId
+	int32  type  =2;// 类型（0 离线， 1在线）
+	
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+package video_status;
+
+option java_outer_classname="C2SVideoStatus";
+
+// cmd - 148
+message VideoStatus
+{
+	string groupId = 1;	// 群id
+	string roomId = 2; //音视频通话id
+	repeated VideoStatusList ststus = 3; //通话人员列表
+}
+
+message VideoStatusList
+{
+	string userId = 1; //用户id
+	repeated Status ststus = 2; //通话人员列表
+}
+
+message Status
+{
+	string type = 1; //状态类型 video - 视频    audio - 音频
+	int32 state = 2; //状态 0-关闭 1-开启
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+package query_group_name;
+
+option java_outer_classname="S2CQueryGroupName";
+
+// 群信息回包
+message QueryGroupName
+{
+	repeated ItemGroupInfo groupInfos = 1; // 信息
+}
+
+message ItemGroupInfo
+{
+    string targetId = 1;// targetId
+	string name = 2; //群昵称
+}

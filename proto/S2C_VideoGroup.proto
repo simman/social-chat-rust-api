@@ -1,0 +1,19 @@
+syntax = "proto3";
+package video_group;
+
+option java_outer_classname="S2CVideoGroup";
+
+// cmd - 549
+message VideoGroup
+{
+	string groupId = 1;	// 群id
+	int32 type = 2; //音视频通话类型 1-音频 2-视频
+	string roomId = 3; //音视频通话id
+	repeated VideoUserStatus users = 4; //通话人员列表
+}
+
+message VideoUserStatus
+{
+	string userId = 1;//通话人员 userId
+	int32 in = 2;//人员状态 0 - 未建立流  1-已建立流
+}
