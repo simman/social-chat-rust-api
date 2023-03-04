@@ -6,6 +6,9 @@ pub mod aes_util;
 pub use aes_util::*;
 
 pub mod base64_util;
+pub mod image_util;
+pub mod logger_util;
+pub mod md5_util;
 pub mod proto_gen_util;
 pub mod rsa_util;
 

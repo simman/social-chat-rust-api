@@ -1,7 +1,6 @@
 use crate::protos::auth_success::AuthSuccess;
 use anyhow::{anyhow, Result};
 use prost::Message;
-use rsa::errors::Error;
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug)]
