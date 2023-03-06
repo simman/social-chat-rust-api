@@ -1,6 +1,5 @@
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
-use log4rs::append::file::FileAppender;
 use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
 use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
 use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
@@ -47,7 +46,7 @@ fn get_rolling_file_appender(base_path: &str, name: &str) -> RollingFileAppender
         .unwrap()
 }
 
-pub fn init_log(base_path: &str) {
+pub(crate) fn init_log(base_path: &str) {
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(CONSOLE_PATTERN)))
         .build();

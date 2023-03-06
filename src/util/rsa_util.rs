@@ -1,11 +1,44 @@
+use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use image::EncodableLayout;
 
+use crate::util;
 use rsa::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding},
     Pkcs1v15Encrypt, PublicKey, RsaPrivateKey, RsaPublicKey,
 };
+
+static PAIR_AES_KEY: &str = "ShVmYq3t6w9z$C&E";
+
+trait RsaEncodePrivateKey {
+    fn to_pkcs8_encrypted_pem_file(&self, path: impl AsRef<Path>) -> Result<()>;
+    fn from_pkcs8_encrypted_pem_file(path: impl AsRef<Path>) -> Result<RsaPrivateKey>;
+}
+
+impl RsaEncodePrivateKey for RsaPrivateKey {
+    fn to_pkcs8_encrypted_pem_file(&self, path: impl AsRef<Path>) -> Result<()> {
+        let _priv_key = self.to_pkcs8_pem(rsa::pkcs8::LineEnding::default())?;
+        let aes_encrypt_data =
+            util::aes_util::encrypt(_priv_key.as_bytes(), PAIR_AES_KEY.as_bytes()).unwrap();
+        let mut file = File::create(path).expect("create public.pem failed");
+        file.write_all(aes_encrypt_data.as_bytes())
+            .expect("write failed");
+        Ok(())
+    }
+
+    fn from_pkcs8_encrypted_pem_file(path: impl AsRef<Path>) -> Result<RsaPrivateKey> {
+        let content = fs::read(path)?;
+        let aes_decrypt_data = util::aes_util::decrypt(&content, PAIR_AES_KEY.as_bytes()).unwrap();
+        Ok(
+            RsaPrivateKey::from_pkcs8_pem(String::from_utf8(aes_decrypt_data).unwrap().as_str())
+                .unwrap(),
+        )
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -44,32 +77,25 @@ fn generate_key_pair(base_path: &str, pkcs_size: Option<usize>) -> Result<RsaKey
     if !p.exists() {
         std::fs::create_dir_all(p)?
     }
-    priv_key.write_pkcs8_pem_file(
-        key_pair_path.join("private.pem").to_str().unwrap(),
-        rsa::pkcs8::LineEnding::default(),
-    )?;
-    pub_key.write_public_key_pem_file(
-        key_pair_path.join("public.pem").to_str().unwrap(),
-        rsa::pkcs8::LineEnding::default(),
-    )?;
+
+    priv_key.to_pkcs8_encrypted_pem_file(key_pair_path.join("private.pem").to_str().unwrap())?;
+
     Ok(RsaKeyPair { priv_key, pub_key })
 }
 
 fn load_key_pair(base_path: &str) -> Result<RsaKeyPair> {
     let key_pair_path = PathBuf::from(base_path).join("keyPair");
-    let priv_key =
-        RsaPrivateKey::read_pkcs8_pem_file(key_pair_path.join("private.pem").to_str().unwrap())
-            .unwrap();
+    let priv_key = RsaPrivateKey::from_pkcs8_encrypted_pem_file(
+        key_pair_path.join("private.pem").to_str().unwrap(),
+    )
+    .unwrap();
     let pub_key = RsaPublicKey::from(&priv_key);
     Ok(RsaKeyPair { priv_key, pub_key })
 }
 
 fn key_pair_exist(base_path: &str) -> Result<bool> {
     let key_pair_path = PathBuf::from(base_path).join("keyPair");
-    Ok(
-        Path::new(key_pair_path.join("private.pem").to_str().unwrap()).exists()
-            && Path::new(key_pair_path.join("public.pem").to_str().unwrap()).exists(),
-    )
+    Ok(Path::new(key_pair_path.join("private.pem").to_str().unwrap()).exists())
 }
 
 pub fn get_or_gen_key_pair(base_path: &str) -> Result<RsaKeyPair> {
@@ -108,36 +134,4 @@ pub fn encrypt(pub_key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>> {
     let mut rng = rand::thread_rng();
     let o = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, msg);
     Result::Ok(o.unwrap())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::store_util;
-    use crate::store_util::StoreName;
-    use std::thread;
-
-    #[test]
-    fn test_store_write_and_read() {
-        let idx = 1000;
-        let key = format!("user_name_{}", idx);
-        store_util::get(StoreName::EMOTICONS)
-            .unwrap()
-            .lock()
-            .unwrap()
-            .set(key.clone(), key.clone().as_str());
-
-        let val = store_util::get(StoreName::EMOTICONS)
-            .unwrap()
-            .lock()
-            .unwrap()
-            .get(key.clone())
-            .unwrap();
-        println!(
-            "threadId: {:?}, idx: {}, val: {:?}",
-            thread::current().id(),
-            idx,
-            String::from_utf8(val.to_vec())
-        );
-    }
 }

@@ -1,6 +1,5 @@
 use anyhow::Result;
 use image::io::Reader;
-use std::any::{type_name, Any};
 use std::fs;
 
 #[allow(dead_code)]

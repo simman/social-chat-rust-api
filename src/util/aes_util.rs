@@ -1,58 +1,103 @@
-use std::error::Error;
-use crypto::aes::KeySize::KeySize128;
-use crypto::blockmodes::{PkcsPadding};
-use crypto::buffer::{RefReadBuffer, RefWriteBuffer};
+extern crate crypto;
+
+use crypto::buffer::{BufferResult, ReadBuffer, WriteBuffer};
+use crypto::{aes, blockmodes, buffer, symmetriccipher};
 
 static IV: &str = "0123456789012345";
 
-/// aes 加密
-pub fn encrypt(key: &[u8], text: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut encrypt = crypto::aes::cbc_encryptor(
-        KeySize128,
+pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+    let mut encryptor = aes::cbc_encryptor(
+        aes::KeySize::KeySize128,
         key,
         IV.as_bytes(),
-        PkcsPadding,
+        blockmodes::PkcsPadding,
     );
-    let mut read_buffer = RefReadBuffer::new(text);
-    let mut result = vec![0; text.len() * 4];
-    let mut write_buffer = RefWriteBuffer::new(&mut result);
-    encrypt.encrypt(&mut read_buffer, &mut write_buffer, true).unwrap();
-    Ok(result.into_iter().filter(|v| *v != 0).collect())
+
+    let mut final_result = Vec::<u8>::new();
+    let mut read_buffer = buffer::RefReadBuffer::new(data);
+    let mut buffer = [0; 4096];
+    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
+
+    loop {
+        let result = encryptor
+            .encrypt(&mut read_buffer, &mut write_buffer, true)
+            .unwrap();
+        final_result.extend(
+            write_buffer
+                .take_read_buffer()
+                .take_remaining()
+                .iter()
+                .map(|&i| i),
+        );
+
+        match result {
+            BufferResult::BufferUnderflow => break,
+            BufferResult::BufferOverflow => {}
+        }
+    }
+
+    Ok(final_result)
 }
 
-
-/// aes 解密
-pub fn decrypt(key: &[u8], text: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut decrypt = crypto::aes::cbc_decryptor(
-        KeySize128,
+pub fn decrypt(
+    encrypted_data: &[u8],
+    key: &[u8],
+) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+    let mut decryptor = aes::cbc_decryptor(
+        aes::KeySize::KeySize128,
         key,
         IV.as_bytes(),
-        PkcsPadding,
+        blockmodes::PkcsPadding,
     );
-    let mut read_buffer = RefReadBuffer::new(text);
-    let mut result = vec![0; text.len()];
-    let mut write_buffer = RefWriteBuffer::new(&mut result);
-    decrypt.decrypt(&mut read_buffer, &mut write_buffer, true).unwrap();
-    Ok(result)
-}
 
+    let mut final_result = Vec::<u8>::new();
+    let mut read_buffer = buffer::RefReadBuffer::new(encrypted_data);
+    let mut buffer = [0; 4096];
+    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
+
+    loop {
+        let result = decryptor
+            .decrypt(&mut read_buffer, &mut write_buffer, true)
+            .unwrap();
+        final_result.extend(
+            write_buffer
+                .take_read_buffer()
+                .take_remaining()
+                .iter()
+                .map(|&i| i),
+        );
+        match result {
+            BufferResult::BufferUnderflow => break,
+            BufferResult::BufferOverflow => {}
+        }
+    }
+
+    Ok(final_result)
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::util;
+    use crate::util::base64_util::decode;
 
     #[test]
     fn test_encode() {
         let key = "ShVmYq3t6w9z$C&E";
-        assert_eq!(encrypt(key.as_bytes(), "hello".as_bytes()).unwrap(), vec![70, 187, 90, 156, 151, 198, 246, 224, 184, 153, 170, 232, 91, 104, 248, 4]);
+        assert_eq!(
+            encrypt("hello".as_bytes(), key.as_bytes()).unwrap(),
+            vec![70, 187, 90, 156, 151, 198, 246, 224, 184, 153, 170, 232, 91, 104, 248, 4]
+        );
     }
 
     #[test]
     fn test_decode() {
         let key = "ShVmYq3t6w9z$C&E";
-        let data: Vec<u8> = vec![70, 187, 90, 156, 151, 198, 246, 224, 184, 153, 170, 232, 91, 104, 248, 4];
-        let mut de_data = decrypt(key.as_bytes(), &data).unwrap();
-        de_data.retain(|&f| f != 0u8);
-        assert_eq!(de_data, "hello".as_bytes().to_vec());
+        let encrypt_data = vec![
+            70, 187, 90, 156, 151, 198, 246, 224, 184, 153, 170, 232, 91, 104, 248, 4,
+        ];
+
+        let decrypt_data = decrypt(&encrypt_data, key.as_bytes()).unwrap();
+        assert_eq!(decrypt_data, "hello".as_bytes());
     }
 }

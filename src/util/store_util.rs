@@ -1,8 +1,8 @@
-use std::collections::{BTreeMap};
-use std::path::Path;
-use crate::safe_store::{SafeStore, StoreConfig};
-use std::sync::{Arc, Mutex};
+use crate::util::safe_store::{SafeStore, StoreConfig};
 use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub enum StoreName {
@@ -29,24 +29,17 @@ impl StoreName {
     }
 }
 
-static PWD_PATH: Lazy<Arc<Mutex<Option<String>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Option::None))
-});
-static CURRENT_USER_ID: Lazy<Arc<Mutex<Option<String>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Option::None))
-});
-static STORE_MAPS: Lazy<Arc<Mutex<BTreeMap<StoreName, Arc<Mutex<SafeStore>>>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(BTreeMap::new()))
-});
+static PWD_PATH: Lazy<Arc<Mutex<Option<String>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(Option::None)));
+static CURRENT_USER_ID: Lazy<Arc<Mutex<Option<String>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(Option::None)));
+static STORE_MAPS: Lazy<Arc<Mutex<BTreeMap<StoreName, Arc<Mutex<SafeStore>>>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
 
-pub fn init(pwd: &str, user_id: &str) -> () {
+pub(crate) fn init(pwd: &str) -> () {
     match PWD_PATH.lock() {
         Ok(mut i) => *i = Some(pwd.to_string()),
         Err(_) => panic!("pwd path is not empty!"),
-    }
-    match CURRENT_USER_ID.lock() {
-        Ok(mut i) => *i = Some(user_id.to_string()),
-        Err(_) => panic!("current user id is not empty!"),
     }
     let mut store_map = STORE_MAPS.lock().unwrap();
     match store_map.get(&StoreName::COMMON) {
@@ -75,7 +68,7 @@ pub fn change_user_scope(user_id: &str) {
     match store_map.get(&StoreName::COMMON) {
         Some(store) => {
             store.lock().unwrap().set("lastLoginUser.userId", user_id);
-        },
+        }
         None => (),
     }
 }
@@ -84,21 +77,18 @@ pub fn get(store_name: StoreName) -> Option<Arc<Mutex<SafeStore>>> {
     let mut store_map = STORE_MAPS.lock().unwrap();
     match store_map.get(&store_name) {
         Some(store) => Some(store.clone()),
-        None => {
-            match PWD_PATH.lock() {
-                Ok(pwd) => {
-                    let path = 
-                        get_store_config(pwd.as_ref().unwrap().as_str(), None);
-                    let config = StoreConfig {
-                        pwd: path,
-                        config_name: store_name.str().to_string(),
-                    };
-                    let store = Arc::new(Mutex::new(SafeStore::from_config(config)));
-                    store_map.insert(store_name, store.clone());
-                    Some(store)
-                },
-                Err(_) => None,
+        None => match PWD_PATH.lock() {
+            Ok(pwd) => {
+                let path = get_store_config(pwd.as_ref().unwrap().as_str(), None);
+                let config = StoreConfig {
+                    pwd: path,
+                    config_name: store_name.str().to_string(),
+                };
+                let store = Arc::new(Mutex::new(SafeStore::from_config(config)));
+                store_map.insert(store_name, store.clone());
+                Some(store)
             }
+            Err(_) => None,
         },
     }
 }
@@ -121,5 +111,37 @@ pub fn get_store_config(pwd: &str, user_id: Option<&str>) -> String {
         binding = binding.join(uid);
     }
     let path = Path::new(binding.to_str().unwrap());
-    return path.to_str().unwrap().to_string()
+    return path.to_str().unwrap().to_string();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::util::store_util;
+    use crate::util::store_util::StoreName;
+    use std::thread;
+
+    #[test]
+    fn test_store_write_and_read() {
+        let idx = 1000;
+        let key = format!("user_name_{}", idx);
+        store_util::get(StoreName::EMOTICONS)
+            .unwrap()
+            .lock()
+            .unwrap()
+            .set(key.clone(), key.clone().as_str());
+
+        let val = store_util::get(StoreName::EMOTICONS)
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get(key.clone())
+            .unwrap();
+        println!(
+            "threadId: {:?}, idx: {}, val: {:?}",
+            thread::current().id(),
+            idx,
+            String::from_utf8(val.to_vec())
+        );
+    }
 }

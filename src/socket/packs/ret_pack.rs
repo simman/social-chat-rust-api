@@ -1,8 +1,7 @@
-use crate::cmd;
-use crate::protos::ack_status::AckStatus;
-use crate::protos::auth_success::AuthSuccess;
-use anyhow::{anyhow, Result};
-use prost::{DecodeError, Message};
+use crate::socket::cmd;
+use crate::socket::protos::auth_success::AuthSuccess;
+use anyhow::Result;
+use prost::Message;
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug)]

@@ -1,4 +1,3 @@
-use crate::protos::auth_success::AuthSuccess;
 use anyhow::{anyhow, Result};
 use prost::Message;
 
@@ -51,6 +50,7 @@ impl<T: Message> ReqPack<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::socket::protos::auth_success::AuthSuccess;
 
     #[test]
     fn test_encode() {
