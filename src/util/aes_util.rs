@@ -78,8 +78,6 @@ pub fn decrypt(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::util;
-    use crate::util::base64_util::decode;
 
     #[test]
     fn test_encode() {

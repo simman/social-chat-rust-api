@@ -8,7 +8,7 @@ use crate::util::store_util::StoreName;
 #[derive(Debug)]
 pub struct ChatSdk {
     pub version: String,
-    rsa_key_pair: RsaKeyPair,
+    pub rsa_key_pair: RsaKeyPair,
 }
 
 impl ChatSdk {
