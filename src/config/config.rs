@@ -9,7 +9,7 @@ pub struct ChatSdkConfig {
     pub app: AppConfig,
     pub socket: SocketConfig,
     pub http: HttpConfig,
-    pub im_server: IMServerConfig,
+    pub im_server: HttpConfig,
     pub storage: StorageConfig,
 }
 
@@ -40,14 +40,6 @@ pub struct SocketConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpConfig {
-    pub debug: bool,
-    pub prefix_url: String,
-    pub proxy: Option<String>,
-    pub user_agent: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct IMServerConfig {
     pub debug: bool,
     pub prefix_url: String,
     pub proxy: Option<String>,

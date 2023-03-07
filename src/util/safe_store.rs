@@ -57,21 +57,10 @@ impl SafeStore {
 
 pub trait IVecConvert {
     fn to_string(&self) -> String;
-    fn to_str(&self) -> &str;
-    fn to_usize(&self) -> usize;
 }
 
 impl IVecConvert for IVec {
     fn to_string(&self) -> String {
-        String::from_utf8(uid.to_vec()).unwrap()
-    }
-
-    fn to_str(&self) -> &str {
-        String::from_utf8(uid.to_vec()).unwrap().as_str()
-    }
-
-    fn to_num<T>(&self) -> T {
-        let s = String::from_utf8(uid.to_vec()).unwrap();
-        s::parse::<T>().unwrap()
+        String::from_utf8(self.to_vec()).unwrap()
     }
 }

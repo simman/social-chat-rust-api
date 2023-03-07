@@ -1,5 +1,6 @@
 pub mod aes_util;
 pub mod base64_util;
+pub mod device_util;
 pub mod image_util;
 pub mod logger_util;
 pub mod md5_util;

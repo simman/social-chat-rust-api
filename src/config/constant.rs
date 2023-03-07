@@ -1,5 +1,7 @@
+use crate::api::client::{ApiClient, ClientTypeEnum};
 use crate::chat_sdk::ChatSdk;
 use crate::config::config::{load_config, ChatSdkConfig};
+use crate::util::device_util::serial;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -7,4 +9,10 @@ lazy_static! {
     pub static ref SDK_CONFIG: ChatSdkConfig = load_config().unwrap();
     // sdk
     pub static ref CHAT_SDK: ChatSdk = ChatSdk::new();
+    // global http client
+    pub static ref HTTP_CLIENT: ApiClient = ApiClient::new_client(ClientTypeEnum::COMMON);
+    // IM HTTP Client
+    pub static ref IM_HTTP_CLIENT: ApiClient = ApiClient::new_client(ClientTypeEnum::IM);
+    // machine id
+    pub static ref MACHINE_ID: String = serial();
 }

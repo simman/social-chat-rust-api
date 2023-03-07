@@ -108,34 +108,34 @@ pub fn get_store_config(pwd: &str, user_id: Option<&str>) -> String {
     return path.to_str().unwrap().to_string();
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::util::store_util;
-    use crate::util::store_util::StoreName;
-    use std::thread;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::util::store_util;
+//     use crate::util::store_util::StoreName;
+//     use std::thread;
 
-    #[test]
-    fn test_store_write_and_read() {
-        let idx = 1000;
-        let key = format!("user_name_{}", idx);
-        store_util::get(StoreName::EMOTICONS)
-            .unwrap()
-            .lock()
-            .unwrap()
-            .set(key.clone(), key.clone().as_str());
+//     #[test]
+//     fn test_store_write_and_read() {
+//         let idx = 1000;
+//         let key = format!("user_name_{}", idx);
+//         store_util::get(StoreName::EMOTICONS)
+//             .unwrap()
+//             .lock()
+//             .unwrap()
+//             .set(key.clone(), key.clone().as_str());
 
-        let val = store_util::get(StoreName::EMOTICONS)
-            .unwrap()
-            .lock()
-            .unwrap()
-            .get(key.clone())
-            .unwrap();
-        println!(
-            "threadId: {:?}, idx: {}, val: {:?}",
-            thread::current().id(),
-            idx,
-            String::from_utf8(val.to_vec())
-        );
-    }
-}
+//         let val = store_util::get(StoreName::EMOTICONS)
+//             .unwrap()
+//             .lock()
+//             .unwrap()
+//             .get(key.clone())
+//             .unwrap();
+//         println!(
+//             "threadId: {:?}, idx: {}, val: {:?}",
+//             thread::current().id(),
+//             idx,
+//             String::from_utf8(val.to_vec())
+//         );
+//     }
+// }

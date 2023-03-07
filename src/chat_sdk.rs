@@ -25,9 +25,8 @@ impl ChatSdk {
         if let Some(common_store) = util::store_util::get(StoreName::COMMON) {
             match common_store.lock() {
                 Ok(store) => {
-                    // store.set("last_login_user_id", "15110030400");
                     if let Some(uid) = store.get("last_login_user_id") {
-                        util::store_util::change_user_scope(uid.to_str(), store);
+                        util::store_util::change_user_scope(uid.to_string().as_str(), store);
                     }
                 }
                 Err(_) => (),
