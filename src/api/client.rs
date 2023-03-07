@@ -2,10 +2,10 @@ use crate::config::config::HttpConfig;
 use crate::config::constant::{CHAT_SDK, SDK_CONFIG};
 use nanoid::nanoid;
 use reqwest::header::HeaderMap;
-use reqwest::{Client, Proxy};
+use reqwest::{Proxy};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::policies::ExponentialBackoff;
-use reqwest_retry::RetryTransientMiddleware;
+
+
 use reqwest_tracing::TracingMiddleware;
 
 static CONNECT_TIMEOUT: u64 = 15;
@@ -21,7 +21,7 @@ pub(crate) enum ClientTypeEnum {
 
 impl ApiClient {
     pub(crate) fn new_client(client_type: ClientTypeEnum) -> ApiClient {
-        let mut http_config: &HttpConfig;
+        let http_config: &HttpConfig;
         match client_type {
             ClientTypeEnum::COMMON => http_config = &SDK_CONFIG.http,
             ClientTypeEnum::IM => http_config = &SDK_CONFIG.im_server,

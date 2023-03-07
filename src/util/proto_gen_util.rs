@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn gen_proto_code(proto_file_path: &str, out_file_path: &str) -> Result<()> {
+pub fn gen_proto_code(proto_file_path: &str, _out_file_path: &str) -> Result<()> {
     let dir = fs::read_dir(proto_file_path)?;
     let mut out_files: Vec<String> = Vec::new();
     for (_, f) in dir.enumerate() {
@@ -28,7 +28,7 @@ pub fn gen_proto_code(proto_file_path: &str, out_file_path: &str) -> Result<()> 
             .replace(".protos", "")
             .replace("S2C_", "")
             .replace("C2S_", "");
-        let f_content = f_content.replace(
+        let _f_content = f_content.replace(
             "com.qx.it.protos;",
             &format!("{};", rename_package_name(package_name).as_str()),
         );
@@ -79,7 +79,7 @@ pub fn gen_mod(proto_file_path: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn gen_proto(proto_file_path: &str, out_file_path: &str) -> Result<()> {
+pub fn gen_proto(proto_file_path: &str, _out_file_path: &str) -> Result<()> {
     let dir = fs::read_dir(proto_file_path)?;
     let mut out_files: Vec<String> = Vec::new();
     for (_, f) in dir.enumerate() {
