@@ -2,7 +2,7 @@ use crate::util::safe_store::{SafeStore, StoreConfig};
 use once_cell::sync::Lazy;
 use std::collections::BTreeMap;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub enum StoreName {
@@ -56,21 +56,14 @@ pub(crate) fn init(pwd: &str) -> () {
     }
 }
 
-pub fn change_user_scope(user_id: &str) {
+pub fn change_user_scope(user_id: &str, common_store: MutexGuard<SafeStore>) {
+    restore();
+
     match CURRENT_USER_ID.lock() {
         Ok(mut i) => *i = Some(user_id.to_string()),
         Err(_) => (),
     }
-
-    restore();
-
-    let store_map = STORE_MAPS.lock().unwrap();
-    match store_map.get(&StoreName::COMMON) {
-        Some(store) => {
-            store.lock().unwrap().set("lastLoginUser.userId", user_id);
-        }
-        None => (),
-    }
+    common_store.set("last_login_user_id", user_id);
 }
 
 pub fn get(store_name: StoreName) -> Option<Arc<Mutex<SafeStore>>> {
@@ -79,14 +72,15 @@ pub fn get(store_name: StoreName) -> Option<Arc<Mutex<SafeStore>>> {
         Some(store) => Some(store.clone()),
         None => match PWD_PATH.lock() {
             Ok(pwd) => {
-                let path = get_store_config(pwd.as_ref().unwrap().as_str(), None);
+                let uid = CURRENT_USER_ID.lock().unwrap().clone().unwrap();
+                let path = get_store_config(pwd.as_ref().unwrap().as_str(), Some(uid.as_str()));
                 let config = StoreConfig {
                     pwd: path,
                     config_name: store_name.str().to_string(),
                 };
                 let store = Arc::new(Mutex::new(SafeStore::from_config(config)));
                 store_map.insert(store_name, store.clone());
-                Some(store)
+                return Some(store);
             }
             Err(_) => None,
         },
@@ -100,7 +94,7 @@ pub fn restore() {
     }
 
     match STORE_MAPS.lock() {
-        Ok(mut store_map) => store_map.retain(|k, _| *k != StoreName::COMMON),
+        Ok(mut store_map) => store_map.retain(|k, _| *k == StoreName::COMMON),
         Err(_) => (),
     }
 }

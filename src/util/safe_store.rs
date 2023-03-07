@@ -18,9 +18,7 @@ impl SafeStore {
             Ok(db) => db,
             Err(e) => panic!("failed to open database: {:?}", e),
         };
-        SafeStore {
-            db: database,
-        }
+        SafeStore { db: database }
     }
 
     pub fn set<K: AsRef<[u8]>, V: Into<IVec>>(&self, key: K, value: V) -> bool {
@@ -31,20 +29,20 @@ impl SafeStore {
     }
 
     pub fn get<K: AsRef<[u8]>>(&self, key: K) -> Option<IVec> {
-        return self.db.get(key).unwrap()
+        return self.db.get(key).unwrap();
     }
 
     pub fn del<K: AsRef<[u8]>>(&self, key: K) -> bool {
         match self.db.remove(key) {
             Ok(_) => true,
-            Err(_) => false
-        }        
+            Err(_) => false,
+        }
     }
 
     pub fn has<K: AsRef<[u8]>>(&self, key: K) -> bool {
         match self.db.contains_key(key) {
             Ok(_) => true,
-            Err(_) => false
+            Err(_) => false,
         }
     }
 
@@ -54,5 +52,26 @@ impl SafeStore {
 
     pub fn len(&self) -> usize {
         self.db.len()
+    }
+}
+
+pub trait IVecConvert {
+    fn to_string(&self) -> String;
+    fn to_str(&self) -> &str;
+    fn to_usize(&self) -> usize;
+}
+
+impl IVecConvert for IVec {
+    fn to_string(&self) -> String {
+        String::from_utf8(uid.to_vec()).unwrap()
+    }
+
+    fn to_str(&self) -> &str {
+        String::from_utf8(uid.to_vec()).unwrap().as_str()
+    }
+
+    fn to_num<T>(&self) -> T {
+        let s = String::from_utf8(uid.to_vec()).unwrap();
+        s::parse::<T>().unwrap()
     }
 }
