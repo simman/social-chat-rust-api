@@ -6,11 +6,11 @@ use prost::Message;
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug)]
 pub struct RetPack {
-    len: usize,
-    cmd: usize,
-    sequence: usize,
-    data: Vec<u8>,
-    proto_data: Option<Box<dyn Message>>,
+    pub len: usize,
+    pub cmd: usize,
+    pub sequence: usize,
+    pub data: Vec<u8>,
+    pub proto_data: Option<Box<dyn Message>>,
 }
 
 impl RetPack {
