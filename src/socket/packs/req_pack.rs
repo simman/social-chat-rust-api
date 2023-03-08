@@ -7,7 +7,7 @@ pub struct ReqPack<T> {
     cmd: usize,
     sequence: usize,
     data: Vec<u8>,
-    proto_data: Option<Box<T>>,
+    protocol_data: Option<Box<T>>,
 }
 
 impl<T: Message> ReqPack<T> {
@@ -16,7 +16,7 @@ impl<T: Message> ReqPack<T> {
             cmd: 0,
             sequence: 0,
             data: vec![],
-            proto_data: None,
+            protocol_data: None,
         }
     }
 
@@ -30,13 +30,13 @@ impl<T: Message> ReqPack<T> {
         self
     }
 
-    pub fn set_data(&mut self, proto_data: T) -> &mut ReqPack<T> {
-        self.proto_data = Some(Box::new(proto_data));
+    pub fn set_data(&mut self, protocol_data: T) -> &mut ReqPack<T> {
+        self.protocol_data = Some(Box::new(protocol_data));
         self
     }
 
     pub fn encode(&mut self) -> Result<Vec<u8>> {
-        match self.proto_data.as_ref() {
+        match self.protocol_data.as_ref() {
             Some(data) => {
                 let v = data.encode_to_vec();
                 self.data = v.clone();
@@ -50,7 +50,7 @@ impl<T: Message> ReqPack<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::protos::auth_success::AuthSuccess;
+    use crate::socket::protocols::auth_success::AuthSuccess;
 
     #[test]
     fn test_encode() {

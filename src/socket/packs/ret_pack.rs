@@ -1,5 +1,5 @@
 use crate::socket::cmd;
-use crate::socket::protos::auth_success::AuthSuccess;
+use crate::socket::protocols::auth_success::AuthSuccess;
 use anyhow::Result;
 use prost::Message;
 
@@ -10,7 +10,7 @@ pub struct RetPack {
     pub cmd: usize,
     pub sequence: usize,
     pub data: Vec<u8>,
-    pub proto_data: Option<Box<dyn Message>>,
+    pub protocol_data: Option<Box<dyn Message>>,
 }
 
 impl RetPack {
@@ -20,7 +20,7 @@ impl RetPack {
             cmd: 0,
             sequence: 0,
             data: vec![],
-            proto_data: None,
+            protocol_data: None,
         }
     }
 
@@ -43,7 +43,7 @@ impl RetPack {
         if cmd::command::S2C_RSAKEY == self.cmd {
             let decode = AuthSuccess::decode(&*self.data);
             let data = decode?;
-            self.proto_data = Some(Box::new(data))
+            self.protocol_data = Some(Box::new(data))
         }
         Ok(())
     }
@@ -60,7 +60,7 @@ mod tests {
         p.set_cmd(cmd::command::S2C_RSAKEY);
         let _ = p.decode();
 
-        let x = p.proto_data.unwrap();
+        let x = p.protocol_data.unwrap();
         println!("{:?}", x);
     }
 }
