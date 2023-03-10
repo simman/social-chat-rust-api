@@ -57,7 +57,6 @@ impl SocketClient {
         debug!("===> start_read_loop");
         if let Some(mut stream) = self.read_stream.take() {
             let messages_in = self.messages_in.clone();
-            debug!("messages_in_len: {:?}", messages_in.lock().len());
             let is_connected = Arc::clone(&self.is_connected);
             tokio::spawn(async move {
                 let mut buf = [0; 1024];
@@ -68,7 +67,6 @@ impl SocketClient {
                     }
                     let byte_count = match stream.read(&mut buf).await {
                         Ok(n) if n == 0 => {
-                            debug!("read byte count: {}", n);
                             return;
                         }
                         Ok(n) => n,
@@ -87,27 +85,17 @@ impl SocketClient {
                         }
                     };
 
-                    debug!("收到消息, len: {:?}", byte_count);
-
                     let b = &buf[0..byte_count];
                     messages_in.lock().put_slice(b);
-
-                    debug!("收到的包: {:?}", b);
 
                     // 解包
                     // contentLen有4位，本身不占有长度
                     let content_len: u32 = 4;
                     let msg_in = messages_in.lock();
                     let mut copy_bytes = msg_in.as_bytes();
-                    if copy_bytes.len() > 4 {
+                    if copy_bytes.len() as u32 > content_len {
                         // 读取body长度
                         let body_len = copy_bytes.get_u32();
-                        debug!(
-                            "messages_in_len: {:?}, body_len: {:?}",
-                            msg_in.len(),
-                            body_len
-                        );
-
                         if body_len + content_len <= msg_in.len() as u32 {
                             debug!("开始解包 ===>>>");
                             codec::decode(body_len, copy_bytes);
@@ -126,22 +114,17 @@ impl SocketClient {
             let peer_addr = self.peer_addr.unwrap().clone();
             tokio::spawn(async move {
                 loop {
-                    // debug!("发送消息....");
                     if !*is_connected.lock() {
                         eprintln!("[Connection] connection closed but still alive?");
                         return;
                     }
 
-                    // let bytes: Vec<u8> = Vec::from("XX");
-                    // let e = stream.write(&bytes).await;
                     if messages_out.lock().len() > 0 {
-                        debug!("发送消息....");
                         let next = {
                             let mut write = messages_out.lock();
                             write.pop_front()
                         };
                         if let Some(msg) = next {
-                            debug!("发送消息::::....");
                             let bytes: Vec<u8> = Vec::from(msg);
                             if let Err(e) = stream.write(&bytes).await {
                                 eprintln!(
