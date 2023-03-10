@@ -3,8 +3,10 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
+use bytes::BufMut;
 use image::EncodableLayout;
+use log::debug;
 
 use crate::util;
 use rsa::{
@@ -25,8 +27,7 @@ impl RsaEncodePrivateKey for RsaPrivateKey {
         let aes_encrypt_data =
             util::aes_util::encrypt(_priv_key.as_bytes(), PAIR_AES_KEY.as_bytes()).unwrap();
         let mut file = File::create(path).expect("create public.pem failed");
-        file.write_all(aes_encrypt_data.as_bytes())
-            .expect("write failed");
+        file.write_all(&aes_encrypt_data).expect("write failed");
         Ok(())
     }
 
@@ -49,6 +50,7 @@ pub struct RsaKeyPair {
 
 pub trait PrintKeyStr {
     fn get_key_str(&self) -> Result<String>;
+    fn get_java_key_str(&self) -> Result<String>;
 }
 
 impl PrintKeyStr for RsaPrivateKey {
@@ -57,6 +59,10 @@ impl PrintKeyStr for RsaPrivateKey {
             self.to_pkcs8_pem(LineEnding::default())?.as_str(),
         ))
     }
+
+    fn get_java_key_str(&self) -> Result<String> {
+        todo!()
+    }
 }
 
 impl PrintKeyStr for RsaPublicKey {
@@ -64,6 +70,15 @@ impl PrintKeyStr for RsaPublicKey {
         Ok(String::from(
             self.to_public_key_pem(LineEnding::default())?.as_str(),
         ))
+    }
+
+    fn get_java_key_str(&self) -> Result<String> {
+        Ok(
+            String::from(self.to_public_key_pem(LineEnding::default())?.as_str())
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace("\n", ""),
+        )
     }
 }
 
@@ -132,6 +147,62 @@ pub fn get_pub_key_pair_with_public_key(public_key: &str) -> Result<RsaPublicKey
 
 pub fn encrypt(pub_key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>> {
     let mut rng = rand::thread_rng();
-    let o = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, msg);
-    Result::Ok(o.unwrap())
+    match pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, msg) {
+        Ok(v) => Ok(v),
+        Err(e) => Err(Error::from(e)),
+    }
+}
+
+pub fn decrypt(priv_key: &RsaPrivateKey, data: &[u8]) -> Result<Vec<u8>> {
+    let mut decrypt_result: Vec<u8> = Vec::new();
+    let mut decrypt_message = data.clone();
+    let max_len = 256;
+
+    while decrypt_message.len() > 0 {
+        let input_data = if decrypt_message.len() >= max_len {
+            &decrypt_message[..max_len]
+        } else {
+            &decrypt_message[..]
+        };
+
+        decrypt_message = if decrypt_message.len() >= max_len {
+            &decrypt_message[max_len..]
+        } else {
+            &decrypt_message[..]
+        };
+
+        match priv_key.decrypt(Pkcs1v15Encrypt, input_data) {
+            Ok(v) => decrypt_result.put(v.as_bytes()),
+            Err(e) => {
+                return Err(Error::from(e));
+            }
+        }
+    }
+    Ok(decrypt_result)
+}
+
+#[cfg(test)]
+mod test {
+    use crate::util;
+    use crate::util::rsa_util::{decrypt, encrypt, get_or_gen_key_pair, PrintKeyStr};
+    use log::debug;
+    use rsa::{
+        pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding},
+        Pkcs1v15Encrypt, PublicKey, RsaPrivateKey, RsaPublicKey,
+    };
+    use std::env;
+    use std::io::Read;
+
+    #[test]
+    fn test_encrypt_and_decrypt() {
+        let temp_dir = env::temp_dir().join("_rsa_util_test_");
+        let key_pair = get_or_gen_key_pair(temp_dir.to_str().unwrap()).unwrap();
+        // println!("private_key: {:?}", key_pair.priv_key.get_key_str());
+        // println!("public_key: {:?}", key_pair.pub_key.get_key_str());
+
+        let data = "abc123456".as_bytes();
+        let encrypt_data = encrypt(&key_pair.pub_key, data).unwrap();
+        println!("{:?}", util::base64_util::encode(&encrypt_data));
+        assert_eq!(data, decrypt(&key_pair.priv_key, &encrypt_data).unwrap());
+    }
 }

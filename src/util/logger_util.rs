@@ -8,7 +8,8 @@ use log4rs::config::{Appender, Config, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use std::path::PathBuf;
 
-static CONSOLE_PATTERN: &str = "{d(%Y-%m-%d %H:%M:%S:%6f)} [{f}:{L}] [{P}] [{T}] {h({l})} - {m}{n}";
+// {f} 文件
+static CONSOLE_PATTERN: &str = "{d(%Y-%m-%d %H:%M:%S:%6f)} [{L}] [{P}] [{T}] {h({l})} - {m}{n}";
 static ROLLING_FILE_PATTERN: &str = "{d(%Y-%m-%d %H:%M:%S:%6f)} [{f}:{L}] [{P}] [{T}] {l} - {m}{n}";
 
 pub const HTTP_LOG: &str = "http";

@@ -4,10 +4,10 @@ use prost::Message;
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug)]
 pub struct ReqPack<T> {
-    cmd: usize,
-    sequence: usize,
-    data: Vec<u8>,
-    protocol_data: Option<Box<T>>,
+    pub cmd: u16,
+    pub sequence: u64,
+    pub data: Vec<u8>,
+    pub protocol_data: Option<Box<T>>,
 }
 
 impl<T: Message> ReqPack<T> {
@@ -20,12 +20,12 @@ impl<T: Message> ReqPack<T> {
         }
     }
 
-    pub fn set_cmd(&mut self, cmd: usize) -> &mut ReqPack<T> {
+    pub fn set_cmd(&mut self, cmd: u16) -> &mut ReqPack<T> {
         self.cmd = cmd;
         self
     }
 
-    pub fn set_sequence(&mut self, sequence: usize) -> &mut ReqPack<T> {
+    pub fn set_sequence(&mut self, sequence: u64) -> &mut ReqPack<T> {
         self.sequence = sequence;
         self
     }
