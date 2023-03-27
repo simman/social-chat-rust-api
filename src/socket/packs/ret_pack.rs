@@ -4,6 +4,7 @@ use crate::socket::protocols::rsa_key::RsaKeyRes;
 use anyhow::Result;
 use log::debug;
 use prost::Message;
+use std::fmt::Error;
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug)]
@@ -12,7 +13,7 @@ pub struct RetPack {
     pub cmd: u16,
     pub sequence: u64,
     pub data: Vec<u8>,
-    pub protocol_data: Option<Box<dyn Message>>,
+    // pub protocol_data: Option<Box<dyn Message>>,
 }
 
 impl RetPack {
@@ -22,7 +23,7 @@ impl RetPack {
             cmd: 0,
             sequence: 0,
             data: vec![],
-            protocol_data: None,
+            // protocol_data: None,
         }
     }
 
@@ -46,14 +47,15 @@ impl RetPack {
         self
     }
 
-    pub fn decode(&mut self) -> Result<()> {
-        if cmd::command::S2C_RSAKEY == self.cmd {
-            let decode = RsaKeyRes::decode(&*self.data);
-            let data = decode?;
-            debug!("protocol_data解析结果: {:?}", data);
-            self.protocol_data = Some(Box::new(data))
+    pub fn decode<T: Message + std::default::Default>(&mut self) -> Result<T> {
+        match self.cmd {
+            cmd::command::S2C_RSAKEY => Ok(T::decode(&*self.data)?),
+            cmd::command::S2C_AUTH_SUCCESS => Ok(T::decode(&*self.data)?),
+            cmd::command::S2C_ERROR => Ok(T::decode(&*self.data)?),
+            _ => {
+                return Err(anyhow::anyhow!("decode error, not match cmd: {}", self.cmd));
+            }
         }
-        Ok(())
     }
 }
 
@@ -66,9 +68,9 @@ mod tests {
         let mut p: RetPack = RetPack::default();
         p.set_data(vec![26, 8, 49, 48, 48, 48, 48, 48, 48, 48]);
         p.set_cmd(cmd::command::S2C_RSAKEY);
-        let _ = p.decode();
+        // let _ = p.decode();
 
-        let x = p.protocol_data.unwrap();
-        println!("{:?}", x);
+        // let x = p.protocol_data.unwrap();
+        // println!("{:?}", x);
     }
 }

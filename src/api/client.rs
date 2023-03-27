@@ -2,11 +2,10 @@ use crate::config::config::HttpConfig;
 use crate::config::constant::{CHAT_SDK, SDK_CONFIG};
 use nanoid::nanoid;
 use reqwest::header::HeaderMap;
-use reqwest::{Proxy};
+use reqwest::Proxy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-
-
 use reqwest_tracing::TracingMiddleware;
+use std::borrow::BorrowMut;
 
 static CONNECT_TIMEOUT: u64 = 15;
 
@@ -29,7 +28,11 @@ impl ApiClient {
 
         let mut headers = HeaderMap::new();
         headers.insert("User-Agent", http_config.user_agent.parse().unwrap());
-        headers.insert("Sdk-Version", CHAT_SDK.version.parse().unwrap());
+        // let x = CHAT_SDK.borrow_mut().;
+        headers.insert(
+            "Sdk-Version",
+            CHAT_SDK.with(|sdk| sdk.borrow_mut().parse().unwrap()),
+        );
         headers.insert("request-id", nanoid!().parse().unwrap());
         headers.insert("terminalType", "2".parse().unwrap());
 

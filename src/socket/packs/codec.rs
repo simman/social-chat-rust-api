@@ -2,11 +2,14 @@ use crate::config::constant::CHAT_SDK;
 use crate::socket::cmd::command::*;
 use crate::socket::packs::req_pack::ReqPack;
 use crate::socket::packs::ret_pack::RetPack;
+use crate::socket::protocols::rsa_key::RsaKeyRes;
 use crate::util;
 use anyhow::Result;
 use bytes::{Buf, BufMut, BytesMut};
+use image::EncodableLayout;
 use log::{debug, error};
 use prost::Message;
+use std::any::Any;
 
 pub fn encode<T: Message>(mut pack: ReqPack<T>) -> Box<Vec<u8>> {
     let mut content_len = 7;
@@ -30,7 +33,10 @@ pub fn encode<T: Message>(mut pack: ReqPack<T>) -> Box<Vec<u8>> {
     // haveRsaEncryptCmd := []int{msg_cmd.C2S_KEY}
     // 需要rsa加密
     if have_rsa_encrypt_cmd.contains(&pack.cmd) {
-        //
+        debug!("rsa encrypt cmd: {}", pack.cmd);
+        let rsa_public_key = util::rsa_util::get_pub_key_pair_with_public_key("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjNPWIwsGqIcjMATBeHH6fjw7gpee1zgISYtZi6KBdUNxbU/s//Toz0KFxc9eHuSCsh/W88XM69eYvsytshveswDPE7f52roPoaR7jwIBgo87eWxOzvqjvad88YAurdvEP9ZFRbNa1OUPl48VFOXI3zQnyNxj9XXX2ombLQcfhbbPyHmtph/VNrNHs5tfTuKIvrje0M4JLWfC20fIgKo8JIqwYS1rVIRdXW6E8feNqd72z8Up2721m/+yzMgx3Sv3IYY0TiHWBB44VYRNc5rgGwPoQkq04B306aJaKvVkAOdU7Flcgv0nhgWx41HFv30mmqzMxNwp4zjG5e38rGjFhQIDAQAB").unwrap();
+        let ret = util::rsa_util::encrypt(&rsa_public_key, &body).unwrap();
+        body = BytesMut::from(ret.as_bytes());
     } else if no_need_encrypt_cmd.contains(&pack.cmd) && body.len() > 0 {
     } else if body.len() > 0 {
         // 需要使用aes加密的指令
@@ -50,7 +56,7 @@ pub fn encode<T: Message>(mut pack: ReqPack<T>) -> Box<Vec<u8>> {
     return Box::new(buf.to_vec());
 }
 
-pub fn decode(body_len: u32, mut buf: &[u8]) -> Result<()> {
+pub fn decode(body_len: u32, mut buf: &[u8]) -> Result<RetPack> {
     let _ = buf.get_u8(); // $
     let _ = buf.get_u8(); // T
     let _ = buf.get_u8(); // Q
@@ -72,9 +78,6 @@ pub fn decode(body_len: u32, mut buf: &[u8]) -> Result<()> {
         // pack.set_data(body.to_vec());
     }
 
-    debug!("{:?}", body.len());
-    debug!("{:?}", body);
-
     // 如果有数据
     if body.len() > 0 {
         // 需要使用 rsa 解密 body
@@ -82,25 +85,26 @@ pub fn decode(body_len: u32, mut buf: &[u8]) -> Result<()> {
         let need_aes_decrypt_cmd = vec![S2C_ACK, S2C_KICK, S2C_DESTORY_SUCCESS];
 
         if need_rsa_decrypt_cmd.contains(&pack.cmd) {
-            debug!("body base64: {:?}", util::base64_util::encode(&body));
-
-            match util::rsa_util::decrypt(&CHAT_SDK.rsa_key_pair.priv_key, &body) {
-                Ok(v) => {
-                    pack.set_data(v);
-                }
-                Err(e) => {
-                    error!("rsa decrypt error: {:?}", e);
-                    return Err(e);
-                }
-            }
+            // match util::rsa_util::decrypt(&CHAT_SDK.rsa_key_pair.priv_key, &body) {
+            //     Ok(v) => {
+            //         pack.set_data(v);
+            //     }
+            //     Err(e) => {
+            //         error!("rsa decrypt error: {:?}", e);
+            //         return Err(e);
+            //     }
+            // }
         } else if need_aes_decrypt_cmd.contains(&pack.cmd) {
             // 需要使用 aes 解密 body
         }
 
-        let _ = pack.decode();
+        // let res = pack.decode::<RsaKeyRes>();
+        // debug!("======================");
+        // debug!("pack: {:?}", res);
+        return Ok(pack);
     }
 
-    Ok(())
+    return Err(anyhow::anyhow!("decode RetPack error!"));
 }
 
 fn check_valid_ret_pack() {}

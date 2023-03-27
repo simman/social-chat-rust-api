@@ -9,9 +9,13 @@ use crate::util::store_util::StoreName;
 pub struct ChatSdk {
     pub version: String,
     pub rsa_key_pair: RsaKeyPair,
+    pub server_public_key: Option<String>,
 }
 
 impl ChatSdk {
+    pub fn set_server_public_key(&mut self, key: String) {
+        self.server_public_key = Some(key);
+    }
     pub(crate) fn new() -> ChatSdk {
         let data_dir = SDK_CONFIG.sdk.data_dir.as_str();
         // init config
@@ -36,6 +40,7 @@ impl ChatSdk {
         ChatSdk {
             version: String::from("1.0.0"),
             rsa_key_pair: util::rsa_util::get_or_gen_key_pair(data_dir).unwrap(),
+            server_public_key: None,
         }
     }
 }

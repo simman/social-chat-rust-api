@@ -6,13 +6,14 @@ use log::{debug, error, info};
 use parking_lot::Mutex;
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 use tokio::time::sleep;
 
 pub struct SocketClient {
-    messages_in: Arc<Mutex<BytesMut>>,
+    pub messages_in: Arc<Mutex<BytesMut>>,
     messages_out: Arc<Mutex<VecDeque<Vec<u8>>>>,
 
     is_connected: Arc<Mutex<bool>>,
@@ -76,31 +77,19 @@ impl SocketClient {
                                 std::io::ErrorKind::BrokenPipe => {
                                     *is_connected.lock() = false;
                                 }
+                                std::io::ErrorKind::ConnectionReset => {
+                                    *is_connected.lock() = false;
+                                }
                                 _ => {
                                     unimplemented!()
                                 }
                             }
-
                             return;
                         }
                     };
-
+                    debug!("读取到的数据长度：{:?}", byte_count);
                     let b = &buf[0..byte_count];
                     messages_in.lock().put_slice(b);
-
-                    // 解包
-                    // contentLen有4位，本身不占有长度
-                    let content_len: u32 = 4;
-                    let msg_in = messages_in.lock();
-                    let mut copy_bytes = msg_in.as_bytes();
-                    if copy_bytes.len() as u32 > content_len {
-                        // 读取body长度
-                        let body_len = copy_bytes.get_u32();
-                        if body_len + content_len <= msg_in.len() as u32 {
-                            debug!("开始解包 ===>>>");
-                            codec::decode(body_len, copy_bytes);
-                        }
-                    }
                 }
             });
         }
@@ -135,6 +124,9 @@ impl SocketClient {
                                     std::io::ErrorKind::BrokenPipe => {
                                         *is_connected.lock() = false;
                                     }
+                                    std::io::ErrorKind::ConnectionReset => {
+                                        *is_connected.lock() = false;
+                                    }
                                     _ => {
                                         unimplemented!()
                                     }
@@ -150,7 +142,11 @@ impl SocketClient {
     }
 
     pub async fn disconnect(&mut self) {
-        todo!()
+        *self.is_connected.lock() = true;
+        debug!("===> disconnect");
+        debug!("===> disconnect write_stream");
+        debug!("{:?}", self.write_stream);
+        // let x = self.write_stream.clone();
     }
 
     pub fn is_connected(&self) -> bool {
@@ -158,6 +154,7 @@ impl SocketClient {
     }
 
     pub fn send(&mut self, msg: Vec<u8>) {
+        debug!("===> send: {:?}", msg);
         self.messages_out.lock().push_back(msg);
     }
 }
@@ -255,5 +252,10 @@ mod test {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_xx() {
+        // tokio::Future::
     }
 }

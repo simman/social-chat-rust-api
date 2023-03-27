@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use prost::Message;
 
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReqPack<T> {
     pub cmd: u16,
     pub sequence: u64,
